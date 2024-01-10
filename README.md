@@ -1,8 +1,9 @@
 Fairbrix is a direct predecessor to Litecoin, developed by Charlie Lee.
- - scrypt as a proof of work scheme
+The coin specifications of Fairbrix are as follows:
+ - scrypt as a proof of work algorithm
  - 5 minute block targets
- - 25 coins per block (constant forever)
- - 2016 blocks (1 week) to retarget difficulty
+ - 225 coins per block (constant block reward, forever)
+ - 2016 blocks (about one week) to retarget difficulty
 
 Fairbrix is the predecessor of Litecoin and the first foray into altcoin
  development by Charlie Lee, the future founder of Litecoin.
@@ -14,7 +15,7 @@ of Fairbrix to the modern crypto world.
 
 This version (Fairbrix 0.8.3.7beta) is based on Litecoin version 'exp-0.8.3.7-cc' (Coin Control).
 
-Litecoin is a lite version of Bitcoin using scrypt as a proof of work scheme.
+The coin specification of Litecoin are as follows:
  - 2.5 minute block targets
  - subsidy halves in 840k blocks (~4 years)
  - ~84 million total coins
