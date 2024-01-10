@@ -1,8 +1,14 @@
-Fairbrix is an older, more primitive version of Litecoin.
+Fairbrix is a direct predecessor to Litecoin, developed by Charlie Lee.
  - scrypt as a proof of work scheme
  - 5 minute block targets
  - 25 coins per block (constant forever)
  - 2016 blocks (1 week) to retarget difficulty
+Fairbrix is the predecessor of Litecoin and the first foray into altcoin
+ development by Charlie Lee, the future founder of Litecoin.
+Abandoned by Charlie Lee in 2013 prior to launching Litecoin, Fairbrix
+was re-discovered and revived in late 2023 by a voluntary team of long time crypto enthusiasts.
+
+This release represents the culmination of their work and the revival of Fairbrix to the modern crypto world.
 
 This version (Fairbrix 0.8.3.7beta) is based on Litecoin version 'exp-0.8.3.7-cc' (Coin Control).
 
