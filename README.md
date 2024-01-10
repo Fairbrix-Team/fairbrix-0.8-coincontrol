@@ -8,7 +8,8 @@ Fairbrix is the predecessor of Litecoin and the first foray into altcoin
 Abandoned by Charlie Lee in 2013 prior to launching Litecoin, Fairbrix
 was re-discovered and revived in late 2023 by a voluntary team of long time crypto enthusiasts.
 
-This release represents the culmination of their work and the revival of Fairbrix to the modern crypto world.
+This release represents their efforts to modernize Fairbrix and serves as the re-introduction 
+of Fairbrix to the modern crypto world. 
 
 This version (Fairbrix 0.8.3.7beta) is based on Litecoin version 'exp-0.8.3.7-cc' (Coin Control).
 
