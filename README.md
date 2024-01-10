@@ -2,7 +2,7 @@ Fairbrix is a direct predecessor to Litecoin, developed by Charlie Lee.
 The coin specifications of Fairbrix are as follows:
  - scrypt as a proof of work algorithm
  - 5 minute block targets
- - 225 coins per block (constant block reward, forever)
+ - 25 coins per block (constant block reward, forever)
  - 2016 blocks (about one week) to retarget difficulty
 
 Fairbrix is the predecessor of Litecoin and the first foray into altcoin
