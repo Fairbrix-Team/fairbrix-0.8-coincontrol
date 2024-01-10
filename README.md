@@ -3,6 +3,7 @@ Fairbrix is a direct predecessor to Litecoin, developed by Charlie Lee.
  - 5 minute block targets
  - 25 coins per block (constant forever)
  - 2016 blocks (1 week) to retarget difficulty
+
 Fairbrix is the predecessor of Litecoin and the first foray into altcoin
  development by Charlie Lee, the future founder of Litecoin.
 Abandoned by Charlie Lee in 2013 prior to launching Litecoin, Fairbrix
