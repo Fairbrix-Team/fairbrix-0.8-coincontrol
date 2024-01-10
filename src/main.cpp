@@ -1705,7 +1705,7 @@ bool CBlock::ConnectBlock(CValidationState &state, CBlockIndex* pindex, CCoinsVi
 // FBX
 //                return state.DoS(100, error("ConnectBlock() : tried to overwrite transaction"));
             {
-                if (pindex->nHeight <= 888353)
+                if (pindex->nHeight <= 900000)
                     printf("ConnectBlock() : tried to overwrite transaction (allowed for early blocks)\n");
                 else
                     return state.DoS(100, error("ConnectBlock() : tried to overwrite transaction"));
