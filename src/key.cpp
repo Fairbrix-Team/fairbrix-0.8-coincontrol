@@ -5,8 +5,6 @@
 #include <openssl/ecdsa.h>
 #include <openssl/rand.h>
 #include <openssl/obj_mac.h>
-#include <openssl/bn.h>
-#include "openssl_compat.h"
 
 #include "key.h"
 
@@ -72,11 +70,6 @@ int ECDSA_SIG_recover_key_GFp(EC_KEY *eckey, ECDSA_SIG *ecsig, const unsigned ch
     EC_POINT *Q = NULL;
     BIGNUM *rr = NULL;
     BIGNUM *zero = NULL;
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-#else
-    const BIGNUM *r = NULL;
-    const BIGNUM *s = NULL;
-#endif
     int n = 0;
     int i = recid / 2;
 
@@ -88,13 +81,7 @@ int ECDSA_SIG_recover_key_GFp(EC_KEY *eckey, ECDSA_SIG *ecsig, const unsigned ch
     x = BN_CTX_get(ctx);
     if (!BN_copy(x, order)) { ret=-1; goto err; }
     if (!BN_mul_word(x, i)) { ret=-1; goto err; }
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
     if (!BN_add(x, x, ecsig->r)) { ret=-1; goto err; }
-#else
-    ECDSA_SIG_get0(ecsig, &r, &s);
-    if ((r == NULL) || (s == NULL)) { ret=-1; goto err; }
-    if (!BN_add(x, x, r)) { ret=-1; goto err; }
-#endif
     field = BN_CTX_get(ctx);
     if (!EC_GROUP_get_curve_GFp(group, field, NULL, NULL, ctx)) { ret=-2; goto err; }
     if (BN_cmp(x, field) >= 0) { ret=0; goto err; }
@@ -112,20 +99,12 @@ int ECDSA_SIG_recover_key_GFp(EC_KEY *eckey, ECDSA_SIG *ecsig, const unsigned ch
     if (!BN_bin2bn(msg, msglen, e)) { ret=-1; goto err; }
     if (8*msglen > n) BN_rshift(e, e, 8-(n & 7));
     zero = BN_CTX_get(ctx);
-    BN_zero(zero);
+    if (!BN_zero(zero)) { ret=-1; goto err; }
     if (!BN_mod_sub(e, zero, e, order, ctx)) { ret=-1; goto err; }
     rr = BN_CTX_get(ctx);
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
     if (!BN_mod_inverse(rr, ecsig->r, order, ctx)) { ret=-1; goto err; }
-#else
-    if (!BN_mod_inverse(rr, r, order, ctx)) { ret=-1; goto err; } //Was ->s?
-#endif
     sor = BN_CTX_get(ctx);
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
     if (!BN_mod_mul(sor, ecsig->s, rr, order, ctx)) { ret=-1; goto err; }
-#else
-    if (!BN_mod_mul(sor, s, rr, order, ctx)) { ret=-1; goto err; }
-#endif
     eor = BN_CTX_get(ctx);
     if (!BN_mod_mul(eor, e, rr, order, ctx)) { ret=-1; goto err; }
     if (!EC_POINT_mul(group, Q, eor, R, sor, ctx)) { ret=-2; goto err; }
@@ -133,7 +112,7 @@ int ECDSA_SIG_recover_key_GFp(EC_KEY *eckey, ECDSA_SIG *ecsig, const unsigned ch
 
     ret = 1;
 
-    err:
+err:
     if (ctx) {
         BN_CTX_end(ctx);
         BN_CTX_free(ctx);
@@ -169,19 +148,11 @@ public:
     }
 
     void SetSecretBytes(const unsigned char vch[32]) {
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-    BIGNUM bn;
-    BN_init(&bn);
-    assert(BN_bin2bn(vch, 32, &bn));
-    assert(EC_KEY_regenerate_key(pkey, &bn));
-    BN_clear_free(&bn);
-#else
-    BIGNUM *bn;
-    bn = BN_new();
-    assert(BN_bin2bn(vch, 32, bn));
-    assert(EC_KEY_regenerate_key(pkey, bn));
-    BN_clear_free(bn);
-#endif
+        BIGNUM bn;
+        BN_init(&bn);
+        assert(BN_bin2bn(vch, 32, &bn));
+        assert(EC_KEY_regenerate_key(pkey, &bn));
+        BN_clear_free(&bn);
     }
 
     void GetPrivKey(CPrivKey &privkey, bool fCompressed) {
@@ -238,50 +209,34 @@ public:
     }
 
     bool SignCompact(const uint256 &hash, unsigned char *p64, int &rec) {
-    bool fOk = false;
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-#else
-    const BIGNUM *s = NULL;
-    const BIGNUM *r = NULL;
-#endif
-    ECDSA_SIG *sig = ECDSA_do_sign((unsigned char*)&hash, sizeof(hash), pkey);
-    if (sig==NULL)
-        return false;
-    memset(p64, 0, 64);
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-    int nBitsR = BN_num_bits(sig->r);
-    int nBitsS = BN_num_bits(sig->s);
-#else
-    ECDSA_SIG_get0(sig, &r, &s);
-    int nBitsR = BN_num_bits(r);
-    int nBitsS = BN_num_bits(s);
-#endif
-    if (nBitsR <= 256 && nBitsS <= 256) {
-        CPubKey pubkey;
-        GetPubKey(pubkey, true);
-        for (int i=0; i<4; i++) {
-            CECKey keyRec;
-            if (ECDSA_SIG_recover_key_GFp(keyRec.pkey, sig, (unsigned char*)&hash, sizeof(hash), i, 1) == 1) {
-                CPubKey pubkeyRec;
-                keyRec.GetPubKey(pubkeyRec, true);
-                if (pubkeyRec == pubkey) {
-                    rec = i;
-                    fOk = true;
-                    break;
+        bool fOk = false;
+        ECDSA_SIG *sig = ECDSA_do_sign((unsigned char*)&hash, sizeof(hash), pkey);
+        if (sig==NULL)
+            return false;
+        memset(p64, 0, 64);
+        int nBitsR = BN_num_bits(sig->r);
+        int nBitsS = BN_num_bits(sig->s);
+        if (nBitsR <= 256 && nBitsS <= 256) {
+            CPubKey pubkey;
+            GetPubKey(pubkey, true);
+            for (int i=0; i<4; i++) {
+                CECKey keyRec;
+                if (ECDSA_SIG_recover_key_GFp(keyRec.pkey, sig, (unsigned char*)&hash, sizeof(hash), i, 1) == 1) {
+                    CPubKey pubkeyRec;
+                    keyRec.GetPubKey(pubkeyRec, true);
+                    if (pubkeyRec == pubkey) {
+                        rec = i;
+                        fOk = true;
+                        break;
+                    }
                 }
             }
+            assert(fOk);
+            BN_bn2bin(sig->r,&p64[32-(nBitsR+7)/8]);
+            BN_bn2bin(sig->s,&p64[64-(nBitsS+7)/8]);
         }
-        assert(fOk);
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-        BN_bn2bin(sig->r,&p64[32-(nBitsR+7)/8]);
-        BN_bn2bin(sig->s,&p64[64-(nBitsS+7)/8]);
-#else
-        BN_bn2bin(r,&p64[32-(nBitsR+7)/8]);
-        BN_bn2bin(s,&p64[64-(nBitsS+7)/8]);
-#endif
-    }
-    ECDSA_SIG_free(sig);
-    return fOk;
+        ECDSA_SIG_free(sig);
+        return fOk;
     }
 
     // reconstruct public key from a compact signature
@@ -290,25 +245,14 @@ public:
     // (the signature is a valid signature of the given data for that key)
     bool Recover(const uint256 &hash, const unsigned char *p64, int rec)
     {
-    if (rec<0 || rec>=3)
-        return false;
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-
-#else
-    BIGNUM *s = 0;
-    BIGNUM *r = 0;
-#endif
-    ECDSA_SIG *sig = ECDSA_SIG_new();
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-    BN_bin2bn(&p64[0],  32, sig->r);
-    BN_bin2bn(&p64[32], 32, sig->s);
-#else
-    BN_bin2bn(&p64[0],  32, r);
-    BN_bin2bn(&p64[32], 32, s);
-#endif
-    bool ret = ECDSA_SIG_recover_key_GFp(pkey, sig, (unsigned char*)&hash, sizeof(hash), rec, 0) == 1;
-    ECDSA_SIG_free(sig);
-    return ret;
+        if (rec<0 || rec>=3)
+            return false;
+        ECDSA_SIG *sig = ECDSA_SIG_new();
+        BN_bin2bn(&p64[0],  32, sig->r);
+        BN_bin2bn(&p64[32], 32, sig->s);
+        bool ret = ECDSA_SIG_recover_key_GFp(pkey, sig, (unsigned char*)&hash, sizeof(hash), rec, 0) == 1;
+        ECDSA_SIG_free(sig);
+        return ret;
     }
 };
 
