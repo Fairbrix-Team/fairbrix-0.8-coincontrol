@@ -13,6 +13,7 @@
 
 #include "keystore.h"
 #include "bignum.h"
+#include "util.h"
 
 class CCoins;
 class CTransaction;
